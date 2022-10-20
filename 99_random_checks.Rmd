@@ -1,0 +1,156 @@
+---
+title: "Random checks of abstracts"
+author: "Adrian Barnett"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  word_document: 
+      toc: false # table of content true
+      toc_depth: 1  # 
+---
+  
+```{r, include=FALSE}
+# called from 1_process_pubmed.R
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE, error=FALSE, comment='', dpi=400)
+options(width=1000) # Wide pages
+options(scipen=999) # avoid scientific presentation
+library(dplyr)
+library(tidyr)
+library(flextable)
+TeachingDemos::char2seed('huddersfield')
+```
+
+# Abstracts with no hedging
+
+```{r, results='asis'}
+# with some
+selected = filter(abstract.data, hedging == 0) %>%
+  sample_n(3)
+abstracts = filter(raw_pubmed, pmid %in% selected$pmid) 
+for (k in 1:3){
+  with(selected[k,], cat('words = ', n.words, ', hedging = ', hedging, '\n', sep=''))
+  cat('\n')
+  ab = filter(abstracts, pmid==selected$pmid[k]) %>%
+    pull(abstract)
+  cat(ab)
+  cat('\n\n')
+}
+```
+
+# Abstracts with some hedging
+
+```{r, results='asis'}
+# with some
+selected = filter(abstract.data, hedging > 0) %>%
+  sample_n(3)
+abstracts = filter(raw_pubmed, pmid %in% selected$pmid) 
+for (k in 1:3){
+  with(selected[k,], cat('words = ', n.words, ', hedging = ', hedging, '\n'))
+  cat('\n')
+  ab = filter(abstracts, pmid==selected$pmid[k]) %>%
+    pull(abstract)
+  cat(ab)
+  cat('\n\n')
+}
+```
+
+# Abstracts with no signposting
+
+```{r, results='asis'}
+# with some
+selected = filter(abstract.data, signposting == 0) %>%
+  sample_n(3)
+abstracts = filter(raw_pubmed, pmid %in% selected$pmid) 
+for (k in 1:3){
+  with(selected[k,], cat('words = ', n.words, ', signposting = ', signposting, '\n', sep=''))
+  cat('\n')
+  ab = filter(abstracts, pmid==selected$pmid[k]) %>%
+    pull(abstract)
+  cat(ab)
+  cat('\n\n')
+}
+```
+
+# Abstracts with some signposting
+
+```{r, results='asis'}
+# with some
+selected = filter(abstract.data, signposting > 0) %>%
+  sample_n(3)
+abstracts = filter(raw_pubmed, pmid %in% selected$pmid) 
+for (k in 1:3){
+  with(selected[k,], cat('words = ', n.words, ', signposting = ', signposting, '\n', sep=''))
+  cat('\n')
+  ab = filter(abstracts, pmid==selected$pmid[k]) %>%
+    pull(abstract)
+  cat(ab)
+  cat('\n\n')
+}
+```
+
+# Abstracts with no narrator
+
+```{r, results='asis'}
+# with some
+selected = filter(abstract.data, narrator == FALSE) %>%
+  sample_n(3)
+abstracts = filter(raw_pubmed, pmid %in% selected$pmid) 
+for (k in 1:3){
+  with(selected[k,], cat('words = ', n.words, ', narrator = ', narrator, '\n', sep=''))
+  cat('\n')
+  ab = filter(abstracts, pmid==selected$pmid[k]) %>%
+    pull(abstract)
+  cat(ab)
+  cat('\n\n')
+}
+```
+
+# Abstracts with narrator
+
+```{r, results='asis'}
+# with some
+selected = filter(abstract.data, narrator == TRUE) %>%
+  sample_n(3)
+abstracts = filter(raw_pubmed, pmid %in% selected$pmid) 
+for (k in 1:3){
+  with(selected[k,], cat('words = ', n.words, ', narrator = ', narrator, '\n', sep=''))
+  cat('\n')
+  ab = filter(abstracts, pmid==selected$pmid[k]) %>%
+    pull(abstract)
+  cat(ab)
+  cat('\n\n')
+}
+```
+
+# Abstracts with no noun chunks
+
+```{r, results='asis'}
+# with some
+selected = filter(abstract.data, noun_chunks == 0) %>%
+  sample_n(3)
+abstracts = filter(raw_pubmed, pmid %in% selected$pmid) 
+for (k in 1:3){
+  with(selected[k,], cat('words = ', n.words, ', noun_chunks = ', noun_chunks, '\n', sep=''))
+  cat('\n')
+  ab = filter(abstracts, pmid==selected$pmid[k]) %>%
+    pull(abstract)
+  cat(ab)
+  cat('\n\n')
+}
+```
+
+# Abstracts with noun chunks
+
+```{r, results='asis'}
+# with some
+selected = filter(abstract.data, noun_chunks > 0) %>%
+  sample_n(3)
+abstracts = filter(raw_pubmed, pmid %in% selected$pmid) 
+for (k in 1:3){
+  with(selected[k,], cat('words = ', n.words, ', noun_chunks = ', noun_chunks, '\n', sep=''))
+  cat('\n')
+  ab = filter(abstracts, pmid==selected$pmid[k]) %>%
+    pull(abstract)
+  cat(ab)
+  cat('\n\n')
+}
+```

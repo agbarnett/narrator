@@ -19,6 +19,7 @@
 
 # RStudio files
 .Rproj.user/
+.Rproj
 
 # produced vignettes
 vignettes/*.html
@@ -37,3 +38,17 @@ vignettes/*.pdf
 
 # R Environment Variables
 .Renviron
+
+# By AGB, data sets are huge
+raw/
+documents/
+baseline_xml/
+data/
+figures/ 
+paper/
+notes.txt
+*.udpipe
+temp.xml
+98_dumped.R
+99_dumped.R
+checkAuth.txt

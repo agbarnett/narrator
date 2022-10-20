@@ -1,0 +1,228 @@
+---
+title: "Words and phrases used to search abstracts"
+author: "Adrian Barnett"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  word_document: 
+      toc: false # table of content true
+      toc_depth: 1  # 
+---
+  
+```{r, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE, error=FALSE, comment='', dpi=400)
+options(width=1000) # Wide pages
+options(scipen=999) # avoid scientific presentation
+library(dplyr)
+library(tidyr)
+library(flextable)
+
+source('99_key_characters_words_phrases.R')
+```
+
+A question mark means the preceding character is optional. So 'suggests?' searches for 'suggest' and 'suggests'. Unless specified, the words/phrases are not case sensitive.
+
+## Hedging words/phrases
+
+```{r, results='asis'}
+to_show = words_phrases_hedging
+to_show = to_show[order(to_show)]
+for (word in to_show){
+cat('* ', word, '\n')
+}
+```
+
+## Signposting words/phrases
+
+```{r, results='asis'}
+to_show = words_phrases_signposting
+to_show = to_show[order(to_show)]
+for (word in to_show){
+cat('* ', word, '\n')
+}
+```
+
+## Narrator words/phrases (case sensitive)
+
+```{r, results='asis'}
+to_show = words_phrases_narrator
+to_show = to_show[order(to_show)]
+for (word in to_show){
+cat('* ', word, '\n')
+}
+```
+
+
+## Negative control
+
+```{r, results='asis'}
+to_show = negative_control
+to_show = to_show[order(to_show)] # alphabetical
+for (word in to_show){
+cat('* ', word, '\n')
+}
+```
+
+# Sex and gender
+
+We used three sets of words to examine sex and gender.
+
+## All words combined
+
+```{r, results='asis'}
+to_show = male_words
+to_show = to_show[order(to_show)]
+for (word in to_show){
+cat('* ', word, '\n')
+}
+```
+
+```{r, results='asis'}
+to_show = female_words
+to_show = to_show[order(to_show)]
+for (word in to_show){
+cat('* ', word, '\n')
+}
+```
+
+## Sex words
+
+```{r, results='asis'}
+to_show = male_words1
+to_show = to_show[order(to_show)]
+for (word in to_show){
+cat('* ', word, '\n')
+}
+```
+
+```{r, results='asis'}
+to_show = female_words1
+to_show = to_show[order(to_show)]
+for (word in to_show){
+cat('* ', word, '\n')
+}
+```
+
+## Gender words
+
+```{r, results='asis'}
+to_show = male_words2
+to_show = to_show[order(to_show)]
+for (word in to_show){
+cat('* ', word, '\n')
+}
+```
+
+```{r, results='asis'}
+to_show = female_words2
+to_show = to_show[order(to_show)]
+for (word in to_show){
+cat('* ', word, '\n')
+}
+```
+
+# Hype
+
+We used a range of word sets to investigate hype.
+
+## Importance
+
+```{r, results='asis'}
+to_show = hype_words_1
+to_show = to_show[order(to_show)]
+for (word in to_show){
+cat('* ', word, '\n')
+}
+```
+
+## Novelty
+
+```{r, results='asis'}
+to_show = hype_words_2
+to_show = to_show[order(to_show)]
+for (word in to_show){
+cat('* ', word, '\n')
+}
+```
+
+## Rigor
+
+```{r, results='asis'}
+to_show = hype_words_3
+to_show = to_show[order(to_show)]
+for (word in to_show){
+cat('* ', word, '\n')
+}
+```
+
+## Scale
+
+```{r, results='asis'}
+to_show = hype_words_4
+to_show = to_show[order(to_show)]
+for (word in to_show){
+cat('* ', word, '\n')
+}
+```
+
+## Utility
+
+```{r, results='asis'}
+to_show = hype_words_5
+to_show = to_show[order(to_show)]
+for (word in to_show){
+cat('* ', word, '\n')
+}
+```
+
+
+## Quality
+
+```{r, results='asis'}
+to_show = hype_words_6
+to_show = to_show[order(to_show)]
+for (word in to_show){
+cat('* ', word, '\n')
+}
+```
+
+
+## Attitude
+
+```{r, results='asis'}
+to_show = hype_words_7
+to_show = to_show[order(to_show)]
+for (word in to_show){
+cat('* ', word, '\n')
+}
+```
+
+## Problem
+
+```{r, results='asis'}
+to_show = hype_words_8
+to_show = to_show[order(to_show)]
+for (word in to_show){
+cat('* ', word, '\n')
+}
+```
+
+## Additional hype words
+
+```{r, results='asis'}
+to_show = hype_words_9
+to_show = to_show[order(to_show)]
+for (word in to_show){
+cat('* ', word, '\n')
+}
+```
+
+
+# Misspellings
+
+```{r, results='asis'}
+to_show = spelling_words
+to_show = to_show[order(to_show)] # alphabetical
+for (word in to_show){
+cat('* ', word, '\n')
+}
+```

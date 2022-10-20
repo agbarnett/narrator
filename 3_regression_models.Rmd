@@ -1,0 +1,178 @@
+---
+title: "Regression models for narrator analysis"
+author: "Adrian Barnett"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE, error=FALSE, comment='', dpi=400)
+library(dplyr)
+library(ggplot2)
+library(lme4) # use random effects models for nicer estimates
+library(splines)
+library(sjPlot) # for plotting random effects
+library(sjmisc)
+library(sjlabelled)
+library(broom.mixed)
+library(flextable)
+g.theme = theme_bw() + theme(panel.grid.minor = element_blank())
+
+## get the data
+load('data/for_analysis.RData') # from 2_concatenate_processed_data.R
+
+## Prepare the data for the regression model
+# add top ten countries
+counts = group_by(abstracts, country) %>%
+  summarise(n = n()) %>%
+  ungroup() %>%
+  mutate(country = ifelse(country=='' | is.na(country), 'Missing', country))
+top.ten = arrange(counts, -n) %>%
+  slice(1:10) %>%
+  pull(country)
+abstracts = mutate(abstracts,
+  year = format(date, '%Y'), # add year
+  yearc = (as.numeric(year) - 2000)/10, # per decade
+  author_transform = log2(n.authors+1), # Non-linear transform of author numbers
+  author_transform2 = author_transform*author_transform, # squared
+  Country = ifelse(country %in% top.ten, country, "Other") # all countries outside top 10 are "Other"
+  )
+
+# some papers with huge numbers of authors
+# try quantile regression to see if results change?
+
+```
+
+# Regression model
+
+```{r}
+TeachingDemos::char2seed('barrow')
+to_model = sample_n(abstracts, 200000) # making it faster to run
+model = lmer(n.words ~ bs(author_transform, df=3) + (1|type) + (1|Country) + yearc, data=to_model)
+# table of estimates
+ests = tidy(model, conf.int = TRUE)
+tab = filter(ests, effect =='fixed') %>%
+  select(term, estimate, conf.low, conf.high) %>%
+  mutate(term = ifelse(term=='yearc', 'Year (+10 years)', term))
+ftab = flextable(tab) %>%
+  theme_box() %>%
+  autofit() %>%
+  colformat_double(j=2:4, digits=1)
+ftab
+```
+
+We used a regression model to examine the number of words in the abstract.
+
+The regression model used random effects for country and article type (plotted below). The effect of author numbers was strongly non-linear and so used a spline. These are the "bs" terms which are visualised below.
+
+The table shows the estimated means and 95% confidence interval. The effect for year is per 10 year increase. So every 10 years, the average abstract increases by 12 words.
+
+# Effect for country
+
+```{r}
+re = get_model_data (model, type='re')
+country = re[[1]] %>%
+  arrange(estimate ) %>%
+  mutate(xpos = 1:n())
+plot1 = ggplot(country, aes(x=xpos, y=estimate, ymin=conf.low, ymax=conf.high))+
+  geom_hline(lty=2, col='dark red', yintercept=0)+
+  geom_point()+
+  xlab('')+
+  ylab('Difference in word count')+
+  geom_errorbar(width=0)+
+  scale_x_continuous(breaks=1:nrow(country), labels = country$term)+
+  coord_flip()+
+  g.theme
+plot1
+```
+
+The plot shows the mean difference in word count and 95% confidence interval.
+
+English-speaking countries tend to have longer abstracts.
+
+# Effect for article type
+
+```{r}
+#
+type = re[[2]] %>%
+  arrange(estimate ) %>%
+  mutate(xpos = 1:n())
+plot2 = ggplot(type, aes(x=xpos, y=estimate, ymin=conf.low, ymax=conf.high))+
+  geom_hline(lty=2, col='dark red', yintercept=0)+
+  geom_point()+
+  xlab('')+
+  ylab('Difference in word count')+
+  geom_errorbar(width=0)+
+  scale_x_continuous(breaks=1:nrow(type), labels = type$term)+
+  coord_flip()+
+  g.theme
+plot2
+```
+
+The plot shows the mean difference in word count and 95% confidence interval.
+
+Clinical trials have the longest abstracts on average.
+
+# Word count by author numbers
+
+```{r}
+to_plot = get_model_data(model, type = 'pred', terms=c("author_transform[all]"))
+to_plot = data.frame(to_plot) %>%
+  mutate(n.authors = (2^x) - 1) %>%
+  filter(n.authors <= 3000)
+xlabels = c(0, 2, 10, 100, 1000)
+xbreaks = log2(xlabels + 1)
+splot = ggplot(data=to_plot, aes(x=x, y=predicted, ymin=conf.low, ymax= conf.high))+
+  scale_x_continuous(breaks = xbreaks, labels=xlabels)+
+  geom_ribbon(alpha=0.2)+
+  geom_line(size=1.05)+
+  g.theme+
+  ylab('Mean word count')+
+  xlab('Number of authors')
+splot
+# maximum word count
+max = arrange(to_plot, -predicted) %>% 
+  slice(1) # find highest prediction
+```
+
+The axis for the number of authors is on a log-scale. 
+
+The longest abstracts have `r round(max$n.authors)` authors (on average).
+
+# Residuals
+
+```{r, include=FALSE}
+# check residuals
+res = resid(model)
+fitted = fitted(model)
+to_model = mutate(to_model, res = res, fitted=fitted)
+r_sq = with(to_model, cor(n.words, fitted))^2
+```
+
+
+## Residuals by author numbers
+
+```{r}
+xlabels = c(0, 2, 10, 100, 1000)
+xbreaks = log2(xlabels + 1)
+rplot = ggplot(to_model, aes(x=author_transform, y=res))+
+  scale_x_continuous(breaks = xbreaks, labels=xlabels)+
+  geom_point()+
+  geom_smooth(col='dark red')+
+  g.theme+
+  xlab('Author numbers')+
+  ylab('Residuals')
+rplot
+```
+
+## Residuals histogram
+
+```{r}
+hplot = ggplot(to_model, aes(x=res))+
+  geom_histogram(col='grey33', fill='darkseagreen3')+
+  xlab('Residual')+
+  g.theme
+hplot
+```
+
+There are a small number of very long abstracts, for example this one which over 1500 words: https://pubmed.ncbi.nlm.nih.gov/23074487/. These outliers have a large positive residual, but are unlikely to over-influence the model given the large size of the data. 

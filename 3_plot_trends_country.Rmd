@@ -1,0 +1,261 @@
+---
+title: "Plot trends over time for narrator analysis. Version stratified by country of affiliation."
+author: "Adrian Barnett"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+## called by 3_plot_trends.R ###
+
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE, error=FALSE, comment='', dpi=400)
+options(width=1000) # Wide pages
+options(scipen=999) # avoid scientific presentation
+source('99_functions.R')
+# libraries
+library(dplyr)
+library(stringr)
+library(flextable)
+#library(scales) # for comma
+library(ggplot2)
+library(gridExtra)
+g.theme = theme_bw() + theme(panel.grid.minor = element_blank())
+# colour schemes:
+colours = c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7",'skyblue','dark red') # added a few more
+colours = as.character(yarrr::piratepal('basel'))
+
+## Find the top ten countries
+top.ten = group_by(abstracts, country) %>%
+  tally() %>%
+  arrange(-n) %>%
+  slice(1:10) %>%
+  pull(country)
+abstracts = filter(abstracts, country %in% top.ten) %>%
+  mutate(country = ifelse(is.na(country), 'missing', country))
+```
+
+This document contains trend plots for our analysis of language over time in papers published on _PubMed_. In this analysis we look at trends over time by the top ten countries. In total there were `r format(nrow(abstracts), big.mark=',')` abstracts after restricting to the top ten countries.
+
+The plots show the mean per year. We do not show the 95% confidence interval for the mean, because the plot would be too busy.
+
+We exclude the yearly results for a country if there were fewer than 50 abstracts that year. 
+
+# Signposting
+
+```{r, fig.width=8}
+p1 = make_trend_plot_country(indata = abstracts, outcome = 'signposting')
+print(p1)
+```
+
+# Hedging
+
+```{r, fig.width=8}
+p2 = make_trend_plot_country(indata = abstracts, outcome = 'hedging')
+print(p2)
+```
+
+
+# Noun chunks
+
+```{r, fig.width=8}
+p3 = make_trend_plot_country(indata = abstracts, outcome = 'noun_chunks')
+print(p3)
+```
+
+# Any narrator 
+
+```{r, fig.width=8}
+p4 = make_trend_plot_country(indata = abstracts, outcome = 'narrator')
+print(p4)
+```
+
+This is a binary yes or no outcome, whereas the other outcomes are counts.
+
+# Misspellings 
+
+```{r, fig.width=8}
+p5 = make_trend_plot_country(indata = abstracts, outcome = 'spelling')
+print(p5)
+if(export==TRUE){
+  jpeg('figures/misspellings_country.jpg', width=5, height=4, units='in', res=600, quality=100)
+  print(p5)
+  invisible(dev.off())
+}
+```
+
+# Negative control
+
+```{r, fig.width=8}
+p7 = make_trend_plot_country(indata = abstracts, outcome = 'control', label = 'Negative control')
+print(p7)
+```
+
+# Verbs  
+
+```{r, fig.width=8}
+p8 = make_trend_plot_country(indata = abstracts, outcome = 'VERB', label = 'Verbs')
+print(p8)
+```
+
+# Nouns
+
+```{r, fig.width=8}
+p9 = make_trend_plot_country(indata = abstracts, outcome = 'NOUN', label = 'Nouns')
+print(p9)
+```
+
+# Numbers
+
+```{r, fig.width=8}
+# see https://universaldependencies.org/u/pos/NUM.html
+p10 = make_trend_plot_country(indata = abstracts, outcome = 'NUM', label = 'Numbers')
+print(p10)
+```
+
+Labelled "numbers", but includes numerals such as "11:00" or "one".
+
+# Number of words per sentence
+
+```{r, fig.width=8}
+exclude_handful = filter(abstracts, words_per_sentence < 400) # exclude a few errors
+p11 = make_trend_plot_country(indata = exclude_handful, outcome = 'words_per_sentence', label = 'Words per sentence')
+print(p11)
+```
+
+# Summary plot
+
+```{r, fig.width=9, fig.height=9}
+# add titles
+p1 = p1 + ggtitle('Signposting') + theme(legend.position = 'none')
+p2 = p2 + ggtitle('Hedging') + theme(legend.position = 'none')
+p3 = p3 + ggtitle('Noun chunks') + theme(legend.position = 'none')
+p4 = p4 + ggtitle('Any narrator') + theme(legend.position = 'none')
+p5 = p5 + ggtitle('Misspelling') + theme(legend.position = 'none')
+p7 = p7 + ggtitle('Negative control') + theme(legend.position = 'none')
+p8 = p8 + ggtitle('Verbs') + theme(legend.position = 'none')
+p9 = p9 + ggtitle('Nouns') + theme(legend.position = 'none')
+p10 = p10 + ggtitle('Numbers') + theme(legend.position = 'none')
+# plot
+grid.arrange(p1, p2, p3, 
+             p4, p5, p7,  # p6 is in gender below
+             p8, p9, p10, nrow=3)
+```
+
+# Male and Female
+
+Here we look at the results for male and female words.
+
+### All male words
+
+```{r, fig.width=8}
+p6m = make_trend_plot_country(indata = abstracts, outcome = 'male')
+p6m
+```
+
+### All female words
+
+```{r, fig.width=8}
+p6f = make_trend_plot_country(indata = abstracts, outcome = 'female')
+p6f
+```
+
+### Sex: Male
+
+
+```{r, fig.width=8}
+sm = make_trend_plot_country(indata = abstracts, outcome = 'male1')
+sm
+```
+
+### Sex: Female
+
+
+```{r, fig.width=8}
+sf = make_trend_plot_country(indata = abstracts, outcome = 'female1')
+sf
+```
+
+### Gender: Male
+
+
+```{r, fig.width=8}
+gm = make_trend_plot_country(indata = abstracts, outcome = 'male2')
+gm
+```
+
+### Gender: Female
+
+
+```{r, fig.width=8}
+gf = make_trend_plot_country(indata = abstracts, outcome = 'female2')
+gf
+```
+
+# Hype
+
+Here we examine our definitions of hype.
+
+## Importance
+
+```{r, fig.width=8}
+h1 = make_trend_plot_country(indata = abstracts, outcome = 'hype1', label = 'Importance')
+print(h1)
+```
+
+## Novelty
+
+```{r, fig.width=8}
+h2 = make_trend_plot_country(indata = abstracts, outcome = 'hype2', label = 'Novelty')
+print(h2)
+```
+
+## Rigor
+
+```{r, fig.width=8}
+h3 = make_trend_plot_country(indata = abstracts, outcome = 'hype3', label = 'Rigor')
+print(h3)
+```
+
+## Scale
+
+```{r, fig.width=8}
+h4 = make_trend_plot_country(indata = abstracts, outcome = 'hype4', label = 'Scale')
+print(h4)
+```
+
+## Utility
+
+```{r, fig.width=8}
+h5 = make_trend_plot_country(indata = abstracts, outcome = 'hype5', label = 'Utility')
+print(h5)
+```
+
+## Quality
+
+```{r, fig.width=8}
+h6 = make_trend_plot_country(indata = abstracts, outcome = 'hype6', label = 'Quality')
+print(h6)
+```
+
+## Attitude
+
+```{r, fig.width=8}
+h7 = make_trend_plot_country(indata = abstracts, outcome = 'hype7', label = 'Attitude')
+print(h7)
+```
+
+## Problem
+
+```{r, fig.width=8}
+h8 = make_trend_plot_country(indata = abstracts, outcome = 'hype8', label = 'Problem')
+print(h8)
+```
+
+## Additional hype words
+
+```{r, fig.width=8}
+h9 = make_trend_plot_country(indata = abstracts, outcome = 'hype9', label = 'Hype')
+print(h9)
+```
+
+

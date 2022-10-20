@@ -1,0 +1,259 @@
+---
+title: "Plot trends over time for narrator analysis"
+author: "Adrian Barnett"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+## called by 3_plot_trends.R ###
+
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE, error=FALSE, comment='', dpi=400)
+options(width=1000) # Wide pages
+options(scipen=999) # avoid scientific presentation
+source('99_functions.R')
+# libraries
+library(dplyr)
+library(stringr)
+library(flextable)
+#library(scales) # for comma
+library(ggplot2)
+library(gridExtra)
+g.theme = theme_bw() + theme(panel.grid.minor = element_blank())
+cbPalette = c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7",'skyblue','dark red') # added a few more
+```
+
+This document contains trend plots for our analysis of language over time in papers published on _PubMed_. In total there were `r format(nrow(abstracts), big.mark=',')` abstracts.
+
+The plots show the mean per year and the 95% confidence interval for the mean (shaded area).
+
+There are two plots per outcome: 
+
+* All articles types combined
+* Split by article type
+
+For the results by article type, we excluded years with fewer than 50 abstracts. We did not add confidence intervals to this plot as this made the plot too crowded.
+
+# Signposting
+
+```{r, fig.width=8}
+p1 = make_trend_plot(indata = abstracts, outcome = 'signposting')
+grid.arrange(p1$combined, p1$strata, ncol=2, widths = c(1, 1.45))
+```
+
+# Hedging
+
+```{r, fig.width=8}
+p2 = make_trend_plot(indata = abstracts, outcome = 'hedging')
+grid.arrange(p2$combined, p2$strata, ncol=2, widths = c(1, 1.45))
+```
+
+
+# Noun chunks
+
+```{r, fig.width=8}
+p3 = make_trend_plot(indata = abstracts, outcome = 'noun_chunks')
+grid.arrange(p3$combined, p3$strata, ncol=2, widths = c(1, 1.45))
+```
+
+# Any narrator 
+
+```{r, fig.width=8}
+p4 = make_trend_plot(indata = abstracts, outcome = 'narrator')
+grid.arrange(p4$combined, p4$strata, ncol=2, widths = c(1, 1.45))
+```
+
+This is a binary yes or no outcome, whereas the other outcomes are counts.
+
+# Misspellings 
+
+```{r, fig.width=8}
+p5 = make_trend_plot(indata = abstracts, outcome = 'spelling')
+grid.arrange(p5$combined, p5$strata, ncol=2, widths = c(1, 1.45))
+if(export==TRUE){
+  jpeg('figures/misspellings.jpg', width=5, height=4, units='in', res=600, quality=100)
+  print(p5$combined)
+  invisible(dev.off())
+}
+```
+
+# Negative control
+
+```{r, fig.width=8}
+p7 = make_trend_plot(indata = abstracts, outcome = 'control', label = 'Negative control')
+grid.arrange(p7$combined, p7$strata, ncol=2, widths = c(1, 1.45))
+```
+
+# Verbs  
+
+```{r, fig.width=8}
+p8 = make_trend_plot(indata = abstracts, outcome = 'VERB', label = 'Verbs')
+grid.arrange(p8$combined, p8$strata, ncol=2, widths = c(1, 1.45))
+```
+
+# Nouns
+
+```{r, fig.width=8}
+p9 = make_trend_plot(indata = abstracts, outcome = 'NOUN', label = 'Nouns')
+grid.arrange(p9$combined, p9$strata, ncol=2, widths = c(1, 1.45))
+```
+
+# Numbers
+
+```{r, fig.width=8}
+# see https://universaldependencies.org/u/pos/NUM.html
+p10 = make_trend_plot(indata = abstracts, outcome = 'NUM', label = 'Numbers')
+grid.arrange(p10$combined, p10$strata, ncol=2, widths = c(1, 1.45))
+```
+
+Labelled "numbers", but includes numerals such as "11:00" or "one".
+
+# Number of words per sentence
+
+```{r, fig.width=8}
+exclude_handful = filter(abstracts, words_per_sentence < 400) # exclude a few errors
+p11 = make_trend_plot(indata = exclude_handful, outcome = 'words_per_sentence', label = 'Words per sentence')
+grid.arrange(p11$combined, p11$strata, ncol=2, widths = c(1, 1.45))
+```
+
+
+# Summary plot
+
+```{r, fig.width=9, fig.height=9}
+# add titles
+p1$combined = p1$combined + ggtitle('Signposting')
+p2$combined = p2$combined + ggtitle('Hedging')
+p3$combined = p3$combined + ggtitle('Noun chunks')
+p4$combined = p4$combined + ggtitle('Any narrator')
+p5$combined = p5$combined + ggtitle('Misspelling')
+p7$combined = p7$combined + ggtitle('Negative control')
+p8$combined = p8$combined + ggtitle('Verbs')
+p9$combined = p9$combined + ggtitle('Nouns')
+p10$combined = p10$combined + ggtitle('Numbers')
+# plot
+grid.arrange(p1$combined, p2$combined, p3$combined, 
+             p4$combined, p5$combined, p7$combined, 
+             p8$combined, p9$combined, p10$combined, nrow=3)
+```
+
+# Male and Female
+
+Here we look at the results for male and female words.
+
+### All male and female words
+
+```{r, fig.width=8}
+p6 = make_trend_plot(indata = abstracts, outcome = c('male','female'), legend_position = legend_position) 
+grid.arrange(p6$combined, p6$strata, ncol=2, widths = c(1, 1.45))
+```
+
+### Sex: Male and female
+
+Includes male, males, female and females.
+
+```{r, fig.width=8}
+legend_position[1] =  legend_position[1] - 0.05 # needs to go further left
+p6a = make_trend_plot(indata = abstracts, outcome = c('male1','female1'), category_labels = c('Male sex','Female sex'), legend_position = legend_position) 
+grid.arrange(p6a$combined, p6a$strata, ncol=2, widths = c(1, 1.45))
+```
+
+### Gender: Man and woman
+
+Uses man, men, boy, women, woman, girl and all plurals.
+
+```{r, fig.width=8}
+p6b = make_trend_plot(indata = abstracts, outcome = c('male2','female2'), category_labels = c('Male gender','Female gender'), legend_position = legend_position) 
+grid.arrange(p6b$combined, p6b$strata, ncol=2, widths = c(1, 1.45))
+```
+
+
+# Hype
+
+Here we examine our definitions of hype.
+
+## Importance
+
+```{r, fig.width=8}
+h1 = make_trend_plot(indata = abstracts, outcome = 'hype1', label = 'Importance')
+grid.arrange(h1$combined, h1$strata, ncol=2, widths = c(1, 1.45))
+```
+
+## Novelty
+
+```{r, fig.width=8}
+h2 = make_trend_plot(indata = abstracts, outcome = 'hype2', label = 'Novelty')
+grid.arrange(h2$combined, h2$strata, ncol=2, widths = c(1, 1.45))
+```
+
+## Rigor
+
+```{r, fig.width=8}
+h3 = make_trend_plot(indata = abstracts, outcome = 'hype3', label = 'Rigor')
+grid.arrange(h3$combined, h3$strata, ncol=2, widths = c(1, 1.45))
+```
+
+## Scale
+
+```{r, fig.width=8}
+h4 = make_trend_plot(indata = abstracts, outcome = 'hype4', label = 'Scale')
+grid.arrange(h4$combined, h4$strata, ncol=2, widths = c(1, 1.45))
+```
+
+## Utility
+
+```{r, fig.width=8}
+h5 = make_trend_plot(indata = abstracts, outcome = 'hype5', label = 'Utility')
+grid.arrange(h5$combined, h5$strata, ncol=2, widths = c(1, 1.45))
+```
+
+## Quality
+
+```{r, fig.width=8}
+h6 = make_trend_plot(indata = abstracts, outcome = 'hype6', label = 'Quality')
+grid.arrange(h6$combined, h6$strata, ncol=2, widths = c(1, 1.45))
+```
+
+## Attitude
+
+```{r, fig.width=8}
+h7 = make_trend_plot(indata = abstracts, outcome = 'hype7', label = 'Attitude')
+grid.arrange(h7$combined, h7$strata, ncol=2, widths = c(1, 1.45))
+```
+
+## Problem
+
+```{r, fig.width=8}
+h8 = make_trend_plot(indata = abstracts, outcome = 'hype8', label = 'Problem')
+grid.arrange(h8$combined, h8$strata, ncol=2, widths = c(1, 1.45))
+```
+
+## Additional hype words
+
+```{r, fig.width=8}
+h9 = make_trend_plot(indata = abstracts, outcome = 'hype9', label = 'Hype')
+grid.arrange(h9$combined, h9$strata, ncol=2, widths = c(1, 1.45))
+```
+
+## Summary plot for hype
+
+```{r}
+to_plot = mutate(abstracts, year = as.numeric(format(date, '%Y'))) %>%
+  select(year, n.words, starts_with('hype')) %>%
+  pivot_longer(cols=starts_with('hype'), names_to = "type", values_to = "outcome") %>%
+  mutate(dependent = 100*(outcome / n.words)) %>%
+  group_by(year, type) %>%
+  summarise(mean = mean(dependent)) %>%
+  ungroup()
+# 
+hlabels = c('Importance','Novelty','Rigor','Scale','Utility','Quality','Attitude','Problem','Additional')
+splot = ggplot(data=to_plot, aes(x=year, y=mean, col=type))+
+  geom_line(size=1.04)+
+  scale_color_manual(NULL, values=cbPalette, labels = hlabels)+
+  xlab('Year')+
+  ylab('Per 100 words')+
+  theme_bw()+
+  theme(panel.grid.minor = element_blank(),
+        legend.position = 'right')
+splot
+```
+

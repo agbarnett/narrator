@@ -1,0 +1,248 @@
+---
+title: "Summary statistics for narrator analysis"
+author: "Adrian Barnett"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE, error=FALSE, comment='', dpi=400)
+options(width=1000) # Wide pages
+options(scipen=999) # avoid scientific presentation
+source('99_functions.R')
+# libraries
+library(dplyr)
+library(flextable)
+library(scales) # for comma
+library(ggplot2)
+library(gridExtra)
+g.theme = theme_bw() + theme(panel.grid.minor = element_blank())
+cbPalette = c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7",'skyblue','dark red') # added a few more
+
+#source('99_make_analysis_data.R') # function that creates `for.model` depending on the acronym size
+## get the data
+load('data/for_analysis.RData') # from 2_concatenate_processed_data.R
+abstracts = mutate(abstracts, year = as.numeric(format(date, '%Y'))) # add year 
+excluded.abstracts = mutate(excluded.abstracts, year = as.numeric(format(date, '%Y'))) # add year 
+```
+
+This document contains summary statistics for our analysis of language over time in papers published on _PubMed_. In total there were `r format(nrow(abstracts), big.mark=',')` abstracts.
+
+## Excluded abstracts
+
+### Reasons for exclusion
+
+```{r}
+tab = group_by(excluded.abstracts, reason) %>%
+  tally() %>%
+  arrange(-n) %>%
+  ungroup()
+ftab = flextable(tab) %>%
+  theme_box() %>%
+  autofit()
+ftab
+```
+
+Most abstracts were excluded because there was no abstract or they were not in English.
+
+### Excluded numbers by year
+
+```{r excluded.year.abstracts, fig.width=12, fig.height=8}
+to.plot = group_by(excluded.abstracts, year, reason) %>%
+  tally() %>%
+  ungroup()
+eplot = ggplot(data=to.plot, aes(x=year, y=n, col=factor(reason)))+
+  geom_line(size=1.1)+
+  scale_color_manual('Reason', values = cbPalette)+
+  ylab('Numbers excluded')+
+  xlab('Year')+
+  scale_y_log10(label=comma)+
+  g.theme+
+  theme(legend.position = c(0.15,0.72), 
+        legend.key.size = unit(1.5,"cm"),
+        legend.spacing = unit(0.01, 'cm'),
+        text = element_text(size=18))
+eplot
+```
+
+The y-axis is on a log (base 10) scale.
+
+## Included abstracts over time
+
+```{r includedNumbers}
+## counts by year
+count_abtracts = group_by(abstracts, year) %>%
+  summarise(n = n(), nj = length(unique(jabbrv))) %>%
+  ungroup()
+
+# plot
+breaks = c(10,100,1000,10000,100000,800000)
+cplot = ggplot(data=count_abtracts, aes(x=year, y=n))+
+  geom_line(size=1.04)+
+  xlab('Year')+
+  ylab('Number of abstracts')+
+  theme_bw()+
+  scale_y_log10(breaks=breaks, labels = function(x) format(x, big.mark=',', scientific=FALSE))+
+  theme(panel.grid.minor = element_blank())
+cplot
+```
+
+The plot shows the annual number of included abstracts per year. 
+The y-axis is on a log (base 10) scale.
+
+## Abstract word counts over time
+
+```{r wordCounts}
+## average word counts by year
+word_counts =  group_by(abstracts, year) %>%
+  summarise(n = n(), mean = mean(n.words)) %>%
+  ungroup()
+
+# plot
+wplot = ggplot(data=word_counts, aes(x=year, y=mean))+
+  geom_line(size=1.04)+
+  xlab('Year')+
+  ylab('Average word count')+
+  theme_bw()+
+  theme(panel.grid.minor = element_blank())
+wplot
+```
+
+## Author numbers over time
+
+```{r authordCounts}
+## average word counts by year
+author_counts = group_by(abstracts, year) %>%
+  summarise(n = n(), 
+            mean = mean(n.authors),
+            sd = sd(n.authors)) %>%
+  ungroup() %>%
+  mutate(z = qt(0.975, df = n-1),
+        sem = sd / sqrt(n),
+         lower = mean - (z*sem), # make confidence intervals
+         upper = mean + (z*sem))
+
+# plot
+aplot = ggplot(data=author_counts, aes(x=year, y=mean, ymin=lower, ymax=upper))+
+  geom_ribbon(alpha=0.2)+
+  geom_line(size=1.04)+
+  xlab('Year')+
+  ylab('Average number of authors')+
+  scale_y_continuous(limits=c(1,NA))+ # start at 1 author (minimum, although there are some zeros)
+  theme_bw()+
+  theme(panel.grid.minor = element_blank())
+aplot
+```
+
+The plot shows the average number of authors per paper. 
+
+## Article type
+
+```{r ArticleTypeAbstracts}
+tab = group_by(abstracts, type) %>% 
+  tally() %>%
+  ungroup() %>%
+  arrange(-n) %>%
+  mutate(percent = roundz(100*n / sum(n), 1),
+         percent = ifelse(percent == '0.0', "<0.1", percent))
+ftab = flextable(tab) %>%
+  theme_box() %>%
+  autofit()
+ftab
+```
+
+Most abstracts were journal articles.
+
+## Number of papers per journal
+
+```{r PapersPerJournal}
+counts = group_by(abstracts, jabbrv) %>%
+   summarise(n = n()) %>%
+   ungroup() %>% 
+   mutate(ng = case_when(
+          n <= 10 ~ 1,
+          n > 10 & n <= 50 ~ 2,
+          n > 50 & n <= 100 ~ 3,
+          n > 100 ~ 4
+      ),
+    ng = factor(ng, levels=1:4, labels=c('1 to 10', '11 to 50', '51 to 100', '100+'))) 
+tab = group_by(counts, ng) %>%
+  tally() %>%
+  ungroup()
+names(tab)[1] = 'Papers per journal'
+ftab = flextable(tab) %>%
+  theme_box() %>%
+  autofit()
+ftab
+```
+
+## Top ten journals
+
+These are the top ten journals included in the analysis.
+
+```{r top_ten_journals}
+top.ten = arrange(counts, -n) %>%
+  slice(1:10) %>%
+  select(-ng) %>%
+  rename('Journal name'='jabbrv')
+ftab = flextable(top.ten) %>%
+  theme_box() %>%
+  autofit()
+ftab
+```
+
+## Top ten countries
+
+```{r top_ten_countries}
+counts = group_by(abstracts, country) %>%
+   summarise(n = n()) %>%
+   ungroup() %>%
+   mutate(percent = 100*prop.table(n),
+          country = ifelse(country=='' | is.na(country), '_Missing_', country))
+top.ten = arrange(counts, -n) %>%
+  slice(1:10) 
+ftab = flextable(top.ten) %>%
+  theme_box() %>%
+  autofit() %>%
+  colformat_double(j=3, digits=1)
+ftab
+```
+
+Using the country of the first author.
+
+# Word count by author number
+
+```{r, fig.width=10}
+# get mean word counts
+means = group_by(abstracts, n.authors) %>%
+  summarise(n = n(),
+            mean = mean(n.words)) %>%
+  ungroup() %>%
+  filter(n > 50) # with at least 50 results
+# get transform of x
+means = mutate(means,
+               xtransform = log2(n.authors+1))
+# plot 1: linear
+tplot1 = ggplot(means, aes(x=n.authors, y=mean))+
+  geom_line()+
+  theme_bw()+
+  theme(panel.grid.minor = element_blank())+
+  xlab('Number of authors')+
+  ylab('Mean word count')+
+  ggtitle('Linear author numbers')
+# plot 2: non-linear
+xlabels = c(0, 2, 10, 40, 100) 
+xbreaks = log2(xlabels + 1)
+tplot2 = ggplot(means, aes(x=xtransform, y=mean))+
+  geom_line()+
+  theme_bw()+
+  scale_x_continuous(breaks = xbreaks, labels=xlabels)+
+  theme(panel.grid.minor = element_blank())+
+  xlab('Number of authors')+
+  ylab('Mean word count')+
+  ggtitle('Non-linear author numbers')
+#
+grid.arrange(tplot1, tplot2, ncol=2)
+```
+
+The plots show the mean word count by the number of authors. The left plot uses authors on a linear scale and the right plot uses a non-linear transform of author numbers. There is a strong non-linear association with an initial large growth in word count followed by a decline for papers with a large number of authors. 
